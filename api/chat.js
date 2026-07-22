@@ -3,74 +3,163 @@
 // AIチャットウィジェット バックエンド (Vercel Serverless Function)
 
 export default async function handler(req, res) {
-    // CORS対応（d-more.jp からの呼び出しを許可）
   res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+    return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   const { messages } = req.body || {};
 
   if (!Array.isArray(messages) || messages.length === 0) {
-        return res.status(400).json({ error: 'messages is required (array)' });
+    return res.status(400).json({ error: 'messages is required (array)' });
   }
 
-  // 直近の会話のみ送信（トークン節約・簡易的な会話履歴制限）
   const recentMessages = messages.slice(-10);
 
-  const systemPrompt = `あなたは「ダスキンサービスマスターモアー店（有限会社ホームエレガンス）」の
-  公式サイト d-more.jp に設置されたチャット案内スタッフです。
-  杉並区・中野区・練馬区を中心にハウスクリーニング（エアコン、浴室、キッチン、窓、レンジフード等）を提供しています。
+  const systemPrompt = あなたは「ダスキンサービスマスターモアー店（有限会社ホームエレガンス）」の
+公式サイト d-more.jp に設置されたチャット案内スタッフです。
+杉並区・中野区・練馬区を中心にハウスクリーニング（エアコン、浴室、キッチン、窓、レンジフード等）を提供しています。
 
-  【対応方針】
-  - 丁寧で親しみやすい、簡潔な日本語で回答する（1〜4文程度を目安に）。
-  - サービス内容、対応エリア、予約・見積もりの流れ、当日の準備などの一般的な質問には分かりやすく回答する。
-  - 正確な料金・日程・在庫状況など、サイト側で確定できない情報は断定せず、
-    「正確な金額はお見積もりが必要です」「お電話またはお問い合わせフォームでご確認ください」と案内する。
-    - 個人情報（氏名・住所・電話番号等）の聞き取りは行わない。予約や見積もり依頼は
-      公式のお問い合わせフォームまたは電話への誘導に留める。
-      - サービス対象外の質問（他社比較の誹謗中傷、無関係な雑談等）には丁寧に本題へ誘導する。
-      - わからないことは正直に「わかりかねますので、お電話またはお問い合わせフォームからご確認ください」と答える。`;
+【対応方針】
+- 丁寧で親しみやすい、簡潔な日本語で回答する（1〜4文程度を目安に）。
+- 以下の【料金表】【よくあるご質問】に載っている内容は、断定的な数字も含めて具体的に答えてよい。
+- 【料金表】【よくあるご質問】に載っていない内容（例：現地の汚れ具合による変動、在庫状況、当日の詳細スケジュール等）は、
+  「正確な内容はお見積もり時にご確認ください」「お電話またはお問い合わせフォームでご確認ください」と案内する。
+- 個人情報（氏名・住所・電話番号等）の聞き取りは行わない。予約や見積もり依頼は
+  公式のお問い合わせフォームまたは電話（0120-35-3637、受付時間 平日9:00～17:00）への誘導に留める。
+- サービス対象外の質問（他社比較の誹謗中傷、無関係な雑談等）には丁寧に本題へ誘導する。
+- わからないことは正直に「わかりかねますので、お電話またはお問い合わせフォームからご確認ください」と答える。
+
+【料金表】（2026年7月現在・税込。目安価格のため実際の見積もりで確定）
+■エアコンクリーニング（家庭用壁掛け・自動お掃除機能なし）
+1台 15,400円／2台セット 25,300円／3台セット 37,950円／4台セット 50,600円／5台セット 63,250円
+■エアコンクリーニング（家庭用壁掛け・自動お掃除機能付き）
+1台 26,400円／2台セット 47,300円／3台セット 70,950円／4台セット 94,600円／5台セット 118,250円
+■エアコン（天井埋込型・1〜2方向・付加機能なし）
+1台 34,100円／2台目 30,800円／3台目以降1台につき 27,500円
+オプション：抗菌コート 2,750円／室外機クリーニング(家庭用のみ) 6,600円
+■キッチンクリーニング
+1ヵ所(間口3m未満) 20,680円／1m追加ごとに 2,530円
+オプション例：食器棚・冷蔵庫表面(1mごと)2,530円／排水管クリーニング1,980円／食洗機(ビルトイン)3,850円
+■レンジフードクリーニング
+1台(幅95cm未満) 22,000円／幅15cm追加ごとに 2,530円
+■浴室クリーニング
+1室(床面積3m²・高さ2.4m未満) 22,000円／1m²追加ごとに 5,060円
+オプション：カビ防止コート5,060円〜／浴槽エプロン内部11,000円／浴室暖房乾燥機内部11,000円
+■洗面所クリーニング
+1ヵ所(床面積3.5m²未満) 10,340円／1m²追加ごとに 2,530円
+■トイレクリーニング
+1室(床面積2m²未満) 10,340円
+■全自動洗濯機除菌クリーニング
+縦型 15,400円／縦型乾燥機 18,700円／ドラム式洗濯乾燥機 22,000円
+■フロアクリーニング（フローリング・クッションフロア）
+6帖 11,589円〜／10帖 18,374円〜／15帖 26,866円〜／20帖 33,940円〜
+■カーペットクリーニング
+ウール・化繊 6帖 11,920円〜
+■窓ガラス・サッシ・網戸クリーニング（表裏両面、1枚あたり目安）
+ガラス0.5㎡未満：ガラス1,496円〜／サッシ748円〜／シャッター1,870円〜
+■窓用ガラスフィルム施工（1m²あたり、施工費込み）
+遮熱・UVカットタイプ 19,800円〜／飛散防止タイプ 12,100円〜／防犯タイプ 30,250円〜
+■ファニチャークリーニング（ソファ等）
+布1人掛け 5,142円〜／布3人掛け 11,874円〜
+■オゾン除菌・脱臭サービス
+〜25㎡ 9,900円／〜50㎡ 19,800円
+■網戸張替サービス
+小窓：ベーシック2,530円／プライバシー保護3,850円／防虫防汚9,020円
+掃出し窓：ベーシック5,170円／プライバシー保護7,700円／防虫防汚12,100円
+■ハウスワイドサービス、退去後・入居前清掃、定期清掃（ビル・マンション・店舗等）、研磨サービスは個別お見積もり。
+
+【よくあるご質問】
+Q: 料金はいくらぐらいかかるの？出張費は？
+A: 標準料金は各項目に記載の通りだが、詳しい価格は担当者が伺い見積もりする。出張費・見積もり費は無料。
+Q: 見積もり後に追加料金は発生する？
+A: 当日追加サービスを依頼しない限り追加料金は発生しない。有料パーキング利用時のみ実費負担。
+Q: 見積もりを断りにくい
+A: ご納得いただけなければ遠慮なく断ってよい。
+Q: 見積もりの時間は？
+A: 15〜30分程度。
+Q: 支払い方法は？
+A: サービス後に現金・振込のほか、カード決済・PayPay・LINE Pay・d払いも利用可能（事前申し出必要）。
+Q: すぐお掃除してもらえる？
+A: 流れは「申込→見積もり→日程相談→実施」。急ぎの場合は申込時に相談可。4〜8月・10〜12月は繁忙期で対応できない場合あり。
+Q: どんな人が来る？
+A: 研修を受けたプロスタッフが基本2名1組で訪問。
+Q: サービス時間の目安は？
+A: フローリング15帖 約2.5〜3時間／エアコン家庭用1台 約1〜1.5時間（自動お掃除機能付きは3時間程度）／レンジフード 約2〜2.5時間／キッチン 約2〜3時間／トイレ・洗面 各1〜1.5時間／浴室 約2〜3時間／家全体 約1日。
+Q: 不在でも大丈夫？
+A: 作業開始時・終了時に確認できれば作業中の不在は可。
+Q: どんな薬剤を使う？
+A: 安全性の高い薬剤を使用し、十分にすすぐため薬剤は残らない。
+Q: アレルギーがある場合は？
+A: 事前に医師に相談の上、医師の指示に従って実施。
+Q: 対応エリアは？
+A: 東京都杉並区・中野区・練馬区・世田谷区・新宿区・渋谷区・武蔵野市。エリア外も要相談（担当店より連絡）。
+Q: フィルター自動お掃除機能付きエアコンは内部クリーニング不要？
+A: 不要ではない。熱交換器やファン、排水パイプ等は自動お掃除の対象外で定期的な内部クリーニングが必要。
+Q: 最短でいつ来れる？
+A: 申込時に日程相談。
+Q: エアコンクリーニングの作業時間は？
+A: 通常タイプ 約1.5時間／お掃除機能付き 約2.5〜3時間。
+Q: 抗菌コートの効果は？
+A: 細菌・カビの繁殖を抑制し、効果は約1年持続（環境により変動）。
+Q: 薬剤は体に悪くない？
+A: 十分にすすぐため残留せず、健康への害はない。作業中は薬剤噴霧のため近づかないよう案内。
+Q: 古いエアコンもクリーニング可能？
+A: 製造後9年超は部品破損時に原状復帰できない可能性があり、説明の上ご納得いただければ実施する場合もある。
+Q: 万が一の補償は？
+A: クリーニング時の故障は原則メーカー修理対応。長期使用エアコンは部品保有がなく修理不可の場合あり。作業前にメーカー部品在庫を必ず確認。
 
   try {
-        const apiKey = process.env.OPENAI_API_KEY;
-        if (!apiKey) {
-                return res.status(500).json({ error: 'OPENAI_API_KEY is not configured' });
-        }
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'OPENAI_API_KEY is not configured' });
+    }
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${apiKey}`,
-              },
-              body: JSON.stringify({
-                        model: 'gpt-4o-mini',
-                        messages: [{ role: 'system', content: systemPrompt }, ...recentMessages],
-                        temperature: 0.4,
-                        max_tokens: 500,
-              }),
-      });
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'system', content: systemPrompt }, ...recentMessages],
+        temperature: 0.4,
+        max_tokens: 500,
+      }),
+    });
 
-      if (!response.ok) {
-              const errText = await response.text();
-              console.error('OpenAI API error:', response.status, errText);
-              return res.status(502).json({ error: 'Upstream API error' });
-      }
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('OpenAI API error:', response.status, errText);
+      return res.status(502).json({ error: 'Upstream API error' });
+    }
 
-      const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content ?? '';
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content ?? '';
 
-      return res.status(200).json({ reply });
+    // 後で振り返って回答精度を改善するためのログ（VercelのFunction Logsで確認可能）
+    const lastUserMsg = [...recentMessages].reverse().find((m) => m.role === 'user');
+    console.log(
+      'DMORE_CHAT_LOG',
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        question: lastUserMsg?.content ?? '',
+        answer: reply,
+      })
+    );
+
+    return res.status(200).json({ reply });
   } catch (err) {
-        console.error('chat.js error:', err);
-        return res.status(500).json({ error: 'Internal Server Error' });
+    console.error('chat.js error:', err);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
+
