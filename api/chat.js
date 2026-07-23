@@ -3,6 +3,7 @@
 // AIチャットウィジェット バックエンド (Vercel Serverless Function)
 
 export default async function handler(req, res) {
+  // CORS対応（d-more.jp からの呼び出しを許可）
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -21,9 +22,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'messages is required (array)' });
   }
 
+  // 直近の会話のみ送信（トークン節約・簡易的な会話履歴制限）
   const recentMessages = messages.slice(-10);
 
-  const systemPrompt = あなたは「ダスキンサービスマスターモアー店（有限会社ホームエレガンス）」の
+  const systemPrompt = `あなたは「ダスキンサービスマスターモアー店（有限会社ホームエレガンス）」の
 公式サイト d-more.jp に設置されたチャット案内スタッフです。
 杉並区・中野区・練馬区を中心にハウスクリーニング（エアコン、浴室、キッチン、窓、レンジフード等）を提供しています。
 
@@ -114,7 +116,7 @@ A: 十分にすすぐため残留せず、健康への害はない。作業中�
 Q: 古いエアコンもクリーニング可能？
 A: 製造後9年超は部品破損時に原状復帰できない可能性があり、説明の上ご納得いただければ実施する場合もある。
 Q: 万が一の補償は？
-A: クリーニング時の故障は原則メーカー修理対応。長期使用エアコンは部品保有がなく修理不可の場合あり。作業前にメーカー部品在庫を必ず確認。
+A: クリーニング時の故障は原則メーカー修理対応。長期使用エアコンは部品保有がなく修理不可の場合あり。作業前にメーカー部品在庫を必ず確認。`;
 
   try {
     const apiKey = process.env.OPENAI_API_KEY;
