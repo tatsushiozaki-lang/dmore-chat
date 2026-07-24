@@ -175,10 +175,26 @@ A: クリーニング時の故障は原則メーカー修理対応。長期使�
       })
     );
 
+    // Googleスプレッドシートへのログ自動保存（失敗してもチャット応答には影響させない）
+    const sheetWebhookUrl = process.env.SHEET_WEBHOOK_URL;
+    if (sheetWebhookUrl) {
+      try {
+        await fetch(sheetWebhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: lastUserMsg?.content ?? '',
+            answer: reply,
+          }),
+        });
+      } catch (sheetErr) {
+        console.error('Sheet log failed:', sheetErr);
+      }
+    }
+
     return res.status(200).json({ reply });
   } catch (err) {
     console.error('chat.js error:', err);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
-
